@@ -3,8 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Test géolocalisation – widget Grist</title>
+<title>Enregistrer ma position</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css">
 <script src="https://docs.getgrist.com/grist-plugin-api.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <style>
   :root {
     --fond: #f6f7f4;
@@ -15,6 +17,7 @@
     --ok: #1f6f50;
     --ko: #a63a2b;
     --cadre: #d3d9d4;
+    --champ: #ffffff;
   }
   @media (prefers-color-scheme: dark) {
     :root {
@@ -26,6 +29,7 @@
       --ok: #4fb88b;
       --ko: #ee8b79;
       --cadre: #2c3835;
+      --champ: #1c2423;
     }
   }
   * { box-sizing: border-box; }
@@ -33,14 +37,27 @@
   body {
     font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
     padding: 16px;
-    max-width: 480px;
+    max-width: 520px;
     margin: 0 auto;
   }
-  h1 { font-size: 1.1rem; margin: 0 0 4px; }
-  p.aide { margin: 0 0 16px; color: var(--discret); font-size: .9rem; line-height: 1.4; }
-  button {
+  label { display: block; font-size: .9rem; color: var(--discret); margin-bottom: 6px; }
+  input[type="text"] {
     width: 100%;
-    min-height: 72px;
+    font-size: 1rem;
+    padding: 12px;
+    border: 1px solid var(--cadre);
+    border-radius: 10px;
+    background: var(--champ);
+    color: var(--texte);
+    margin-bottom: 14px;
+  }
+  input[type="text"]:focus-visible, button:focus-visible, .lien:focus-visible {
+    outline: 3px solid var(--texte);
+    outline-offset: 2px;
+  }
+  button.principal {
+    width: 100%;
+    min-height: 76px;
     font-size: 1.25rem;
     font-weight: 600;
     border: 0;
@@ -49,102 +66,234 @@
     color: var(--accent-texte);
     cursor: pointer;
   }
-  button:focus-visible { outline: 3px solid var(--texte); outline-offset: 3px; }
   button:disabled { opacity: .6; cursor: progress; }
-  dl { margin: 20px 0 0; border-top: 1px solid var(--cadre); }
-  .ligne { display: flex; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--cadre); }
-  dt { color: var(--discret); font-size: .9rem; }
-  dd { margin: 0; font-variant-numeric: tabular-nums; text-align: right; word-break: break-word; }
+  .lien {
+    display: block;
+    width: 100%;
+    margin-top: 14px;
+    padding: 12px;
+    background: none;
+    border: 1px solid var(--cadre);
+    border-radius: 10px;
+    color: var(--texte);
+    font-size: 1rem;
+    cursor: pointer;
+  }
+  #panneau-carte { display: none; margin-top: 16px; }
+  #panneau-carte.visible { display: block; }
+  #carte { width: 100%; height: 55vh; min-height: 280px; border-radius: 12px; border: 1px solid var(--cadre); }
+  #fond-carte { display: flex; gap: 8px; margin: 10px 0; }
+  #fond-carte button {
+    flex: 1; padding: 10px; font-size: .95rem;
+    border: 1px solid var(--cadre); border-radius: 10px;
+    background: var(--champ); color: var(--texte); cursor: pointer;
+  }
+  #fond-carte button[aria-pressed="true"] { border-color: var(--accent); font-weight: 600; }
+  #point-choisi { font-size: .95rem; color: var(--discret); margin: 6px 0 10px; min-height: 1.3em; }
+  #message { margin-top: 16px; font-size: .98rem; line-height: 1.45; min-height: 1.4em; }
   .ok { color: var(--ok); font-weight: 600; }
   .ko { color: var(--ko); font-weight: 600; }
-  #message { margin-top: 16px; font-size: .95rem; line-height: 1.45; min-height: 1.4em; }
+  #dernier { margin-top: 18px; border-top: 1px solid var(--cadre); padding-top: 10px; font-size: .9rem; color: var(--discret); display: none; }
+  #dernier.visible { display: block; }
+  #dernier div { padding: 3px 0; font-variant-numeric: tabular-nums; }
 </style>
 </head>
 <body>
-  <h1>Test de position</h1>
-  <p class="aide">Appuyez sur le bouton. Le navigateur peut demander l’autorisation d’accéder à votre position : acceptez.</p>
+  <label for="spot">Spot (facultatif)</label>
+  <input id="spot" type="text" autocomplete="off" placeholder="Nom ou numéro du spot">
 
-  <button id="bouton" type="button">Où suis-je ?</button>
+  <button id="btn-gps" class="principal" type="button">Je suis arrivé : enregistrer ma position</button>
+  <button id="btn-carte" class="lien" type="button">Pointer ma position sur la carte</button>
+
+  <div id="panneau-carte">
+    <div id="carte" role="application" aria-label="Carte : touchez l’endroit où vous êtes"></div>
+    <div id="fond-carte">
+      <button type="button" id="fond-plan" aria-pressed="true">Plan</button>
+      <button type="button" id="fond-photo" aria-pressed="false">Photo aérienne</button>
+    </div>
+    <div id="point-choisi">Touchez la carte à l’endroit où vous êtes.</div>
+    <button id="btn-valider" class="principal" type="button" disabled>Enregistrer ce point</button>
+  </div>
+
   <div id="message" role="status" aria-live="polite"></div>
 
-  <dl>
-    <div class="ligne"><dt>Widget dans Grist</dt><dd id="d-grist">…</dd></div>
-    <div class="ligne"><dt>Autorisation position</dt><dd id="d-perm">…</dd></div>
-    <div class="ligne"><dt>Latitude</dt><dd id="d-lat">–</dd></div>
-    <div class="ligne"><dt>Longitude</dt><dd id="d-lon">–</dd></div>
-    <div class="ligne"><dt>Précision</dt><dd id="d-prec">–</dd></div>
-    <div class="ligne"><dt>Horodatage</dt><dd id="d-heure">–</dd></div>
-  </dl>
+  <div id="dernier">
+    <div id="d-heure"></div>
+    <div id="d-coord"></div>
+    <div id="d-source"></div>
+  </div>
 
 <script>
 (function () {
   var $ = function (id) { return document.getElementById(id); };
-
-  // Connexion à Grist (accès « none » : ce test n’écrit rien dans le document)
-  if (window.grist && typeof grist.ready === 'function') {
-    grist.ready({ requiredAccess: 'none' });
-    $('d-grist').textContent = 'oui';
-    $('d-grist').className = 'ok';
-  } else {
-    $('d-grist').textContent = 'non (page ouverte seule)';
-  }
-
-  // État de l’autorisation, quand le navigateur sait le dire
-  function majPermission() {
-    if (!navigator.permissions || !navigator.permissions.query) {
-      $('d-perm').textContent = 'inconnu';
-      return;
-    }
-    navigator.permissions.query({ name: 'geolocation' }).then(function (p) {
-      var libelles = { granted: 'accordée', denied: 'refusée', prompt: 'à demander' };
-      $('d-perm').textContent = libelles[p.state] || p.state;
-      p.onchange = majPermission;
-    }).catch(function () {
-      $('d-perm').textContent = 'inconnu';
-    });
-  }
-  majPermission();
-
-  var bouton = $('bouton');
   var message = $('message');
 
-  function erreur(e) {
-    message.className = 'ko';
-    if (e.code === 1) {
-      message.textContent = 'Accès à la position refusé. Soit vous avez refusé la demande, soit le navigateur bloque la position dans le widget : aucune demande ne s’est alors affichée.';
-    } else if (e.code === 2) {
-      message.textContent = 'Position indisponible. Vérifiez que la localisation est activée sur le téléphone.';
-    } else if (e.code === 3) {
-      message.textContent = 'Délai dépassé. Réessayez en extérieur ou avec une meilleure réception.';
-    } else {
-      message.textContent = 'Erreur : ' + (e.message || 'inconnue');
-    }
-    $('d-heure').textContent = new Date().toLocaleString('fr-FR');
+  function dire(texte, classe) {
+    message.textContent = texte;
+    message.className = classe || '';
   }
 
-  function succes(pos) {
-    message.className = 'ok';
-    message.textContent = 'Position obtenue.';
-    $('d-lat').textContent = pos.coords.latitude.toFixed(6);
-    $('d-lon').textContent = pos.coords.longitude.toFixed(6);
-    $('d-prec').textContent = Math.round(pos.coords.accuracy) + ' m';
-    $('d-heure').textContent = new Date(pos.timestamp).toLocaleString('fr-FR');
+  // Grist : accès complet, la table doit être celle du widget (Positions)
+  var griste = !!(window.grist && typeof grist.ready === 'function');
+  if (griste) {
+    grist.ready({ requiredAccess: 'full' });
+  } else {
+    dire('Ce widget doit être ouvert dans Grist.', 'ko');
   }
 
-  bouton.addEventListener('click', function () {
+  // Enregistrement d’une ligne. Toutes les lignes sont ajoutées, jamais modifiées.
+  function enregistrer(rec) {
+    if (!griste) { return Promise.reject(new Error('Hors Grist')); }
+    var champs = {
+      Latitude: Math.round(rec.lat * 1e6) / 1e6,
+      Longitude: Math.round(rec.lon * 1e6) / 1e6,
+      Precision_m: rec.precision == null ? null : Math.round(rec.precision),
+      Heure_appareil: Math.floor(Date.now() / 1000),
+      Spot: $('spot').value.trim(),
+      Source: rec.source
+    };
+    return grist.getTable().create({ fields: champs }).then(function () {
+      return champs;
+    });
+  }
+
+  function afficherDernier(c) {
+    $('dernier').className = 'visible';
+    $('d-heure').textContent = 'Dernier enregistrement : ' + new Date().toLocaleString('fr-FR');
+    $('d-coord').textContent = c.Latitude.toFixed(6) + ', ' + c.Longitude.toFixed(6);
+    $('d-source').textContent = 'Source : ' + c.Source +
+      (c.Precision_m == null ? '' : ' (précision ' + c.Precision_m + ' m)');
+  }
+
+  function echecEcriture(e) {
+    var detail = (e && e.message) ? e.message : 'erreur inconnue';
+    dire('La position n’a pas pu être enregistrée (' + detail + '). Vérifiez que le widget est lié à la table Positions et que vous avez le droit d’ajouter des lignes, puis réessayez.', 'ko');
+  }
+
+  // ---- Plan A : GPS ----
+  var btnGps = $('btn-gps');
+  btnGps.addEventListener('click', function () {
     if (!navigator.geolocation) {
-      message.className = 'ko';
-      message.textContent = 'Ce navigateur ne gère pas la géolocalisation.';
+      dire('Le GPS n’est pas disponible. Pointez votre position sur la carte.', 'ko');
+      ouvrirCarte();
       return;
     }
-    bouton.disabled = true;
-    message.className = '';
-    message.textContent = 'Recherche de la position…';
+    btnGps.disabled = true;
+    dire('Recherche de la position…');
     navigator.geolocation.getCurrentPosition(
-      function (pos) { bouton.disabled = false; succes(pos); majPermission(); },
-      function (e) { bouton.disabled = false; erreur(e); majPermission(); },
+      function (pos) {
+        enregistrer({
+          lat: pos.coords.latitude,
+          lon: pos.coords.longitude,
+          precision: pos.coords.accuracy,
+          source: 'GPS'
+        }).then(function (c) {
+          btnGps.disabled = false;
+          dire('Position enregistrée.', 'ok');
+          afficherDernier(c);
+        }).catch(function (e) {
+          btnGps.disabled = false;
+          echecEcriture(e);
+        });
+      },
+      function (err) {
+        btnGps.disabled = false;
+        var raison = err.code === 1 ? 'Accès à la position refusé ou bloqué.'
+                   : err.code === 2 ? 'Position indisponible.'
+                   : err.code === 3 ? 'Délai dépassé.'
+                   : 'Erreur de géolocalisation.';
+        dire(raison + ' Pointez votre position sur la carte.', 'ko');
+        ouvrirCarte();
+      },
       { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
     );
+  });
+
+  // ---- Plan B : carte ----
+  var carte = null;
+  var marqueur = null;
+  var pointChoisi = null;
+
+  function tuiles(couche, format) {
+    return 'https://data.geopf.fr/wmts?SERVICE=WMTS&VERSION=1.0.0&REQUEST=GetTile' +
+      '&LAYER=' + couche + '&STYLE=normal&FORMAT=' + format +
+      '&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}';
+  }
+
+  function initCarte() {
+    carte = new maplibregl.Map({
+      container: 'carte',
+      style: {
+        version: 8,
+        sources: {
+          plan: { type: 'raster', tileSize: 256, maxzoom: 19,
+                  tiles: [tuiles('GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2', 'image/png')],
+                  attribution: '© IGN' },
+          photo: { type: 'raster', tileSize: 256, maxzoom: 19,
+                   tiles: [tuiles('ORTHOIMAGERY.ORTHOPHOTOS', 'image/jpeg')],
+                   attribution: '© IGN' }
+        },
+        layers: [
+          { id: 'plan', type: 'raster', source: 'plan' },
+          { id: 'photo', type: 'raster', source: 'photo', layout: { visibility: 'none' } }
+        ]
+      },
+      center: [-0.75, 43.25],
+      zoom: 9
+    });
+    carte.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+    carte.on('click', function (e) { poserPoint(e.lngLat.lat, e.lngLat.lng); });
+  }
+
+  function poserPoint(lat, lon) {
+    pointChoisi = { lat: lat, lon: lon };
+    if (!marqueur) {
+      marqueur = new maplibregl.Marker({ draggable: true }).setLngLat([lon, lat]).addTo(carte);
+      marqueur.on('dragend', function () {
+        var p = marqueur.getLngLat();
+        poserPoint(p.lat, p.lng);
+      });
+    } else {
+      marqueur.setLngLat([lon, lat]);
+    }
+    $('point-choisi').textContent = 'Point choisi : ' + lat.toFixed(6) + ', ' + lon.toFixed(6);
+    $('btn-valider').disabled = false;
+  }
+
+  function ouvrirCarte() {
+    $('panneau-carte').className = 'visible';
+    if (!carte) { initCarte(); } else { carte.resize(); }
+  }
+
+  $('btn-carte').addEventListener('click', ouvrirCarte);
+
+  function basculerFond(photo) {
+    carte.setLayoutProperty('plan', 'visibility', photo ? 'none' : 'visible');
+    carte.setLayoutProperty('photo', 'visibility', photo ? 'visible' : 'none');
+    $('fond-plan').setAttribute('aria-pressed', photo ? 'false' : 'true');
+    $('fond-photo').setAttribute('aria-pressed', photo ? 'true' : 'false');
+  }
+  $('fond-plan').addEventListener('click', function () { if (carte) { basculerFond(false); } });
+  $('fond-photo').addEventListener('click', function () { if (carte) { basculerFond(true); } });
+
+  $('btn-valider').addEventListener('click', function () {
+    if (!pointChoisi) { return; }
+    var btn = $('btn-valider');
+    btn.disabled = true;
+    dire('Enregistrement…');
+    enregistrer({
+      lat: pointChoisi.lat,
+      lon: pointChoisi.lon,
+      precision: null,
+      source: 'Pointé sur carte'
+    }).then(function (c) {
+      btn.disabled = false;
+      dire('Position enregistrée.', 'ok');
+      afficherDernier(c);
+    }).catch(function (e) {
+      btn.disabled = false;
+      echecEcriture(e);
+    });
   });
 })();
 </script>
