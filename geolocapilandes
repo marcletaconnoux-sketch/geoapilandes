@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Test géolocalisation – widget Grist</title>
+<script src="https://docs.getgrist.com/grist-plugin-api.js"></script>
+<style>
+  :root {
+    --fond: #f6f7f4;
+    --texte: #1d2a24;
+    --discret: #5c6b63;
+    --accent: #1f6f50;
+    --accent-texte: #ffffff;
+    --ok: #1f6f50;
+    --ko: #a63a2b;
+    --cadre: #d3d9d4;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --fond: #14191a;
+      --texte: #e8eee9;
+      --discret: #98a79e;
+      --accent: #4fb88b;
+      --accent-texte: #0c1512;
+      --ok: #4fb88b;
+      --ko: #ee8b79;
+      --cadre: #2c3835;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--fond); color: var(--texte); }
+  body {
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    padding: 16px;
+    max-width: 480px;
+    margin: 0 auto;
+  }
+  h1 { font-size: 1.1rem; margin: 0 0 4px; }
+  p.aide { margin: 0 0 16px; color: var(--discret); font-size: .9rem; line-height: 1.4; }
+  button {
+    width: 100%;
+    min-height: 72px;
+    font-size: 1.25rem;
+    font-weight: 600;
+    border: 0;
+    border-radius: 14px;
+    background: var(--accent);
+    color: var(--accent-texte);
+    cursor: pointer;
+  }
+  button:focus-visible { outline: 3px solid var(--texte); outline-offset: 3px; }
+  button:disabled { opacity: .6; cursor: progress; }
+  dl { margin: 20px 0 0; border-top: 1px solid var(--cadre); }
+  .ligne { display: flex; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--cadre); }
+  dt { color: var(--discret); font-size: .9rem; }
+  dd { margin: 0; font-variant-numeric: tabular-nums; text-align: right; word-break: break-word; }
+  .ok { color: var(--ok); font-weight: 600; }
+  .ko { color: var(--ko); font-weight: 600; }
+  #message { margin-top: 16px; font-size: .95rem; line-height: 1.45; min-height: 1.4em; }
+</style>
+</head>
+<body>
+  <h1>Test de position</h1>
+  <p class="aide">Appuyez sur le bouton. Le navigateur peut demander l’autorisation d’accéder à votre position : acceptez.</p>
+
+  <button id="bouton" type="button">Où suis-je ?</button>
+  <div id="message" role="status" aria-live="polite"></div>
+
+  <dl>
+    <div class="ligne"><dt>Widget dans Grist</dt><dd id="d-grist">…</dd></div>
+    <div class="ligne"><dt>Autorisation position</dt><dd id="d-perm">…</dd></div>
+    <div class="ligne"><dt>Latitude</dt><dd id="d-lat">–</dd></div>
+    <div class="ligne"><dt>Longitude</dt><dd id="d-lon">–</dd></div>
+    <div class="ligne"><dt>Précision</dt><dd id="d-prec">–</dd></div>
+    <div class="ligne"><dt>Horodatage</dt><dd id="d-heure">–</dd></div>
+  </dl>
+
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+
+  // Connexion à Grist (accès « none » : ce test n’écrit rien dans le document)
+  if (window.grist && typeof grist.ready === 'function') {
+    grist.ready({ requiredAccess: 'none' });
+    $('d-grist').textContent = 'oui';
+    $('d-grist').className = 'ok';
+  } else {
+    $('d-grist').textContent = 'non (page ouverte seule)';
+  }
+
+  // État de l’autorisation, quand le navigateur sait le dire
+  function majPermission() {
+    if (!navigator.permissions || !navigator.permissions.query) {
+      $('d-perm').textContent = 'inconnu';
+      return;
+    }
+    navigator.permissions.query({ name: 'geolocation' }).then(function (p) {
+      var libelles = { granted: 'accordée', denied: 'refusée', prompt: 'à demander' };
+      $('d-perm').textContent = libelles[p.state] || p.state;
+      p.onchange = majPermission;
+    }).catch(function () {
+      $('d-perm').textContent = 'inconnu';
+    });
+  }
+  majPermission();
+
+  var bouton = $('bouton');
+  var message = $('message');
+
+  function erreur(e) {
+    message.className = 'ko';
+    if (e.code === 1) {
+      message.textContent = 'Accès à la position refusé. Soit vous avez refusé la demande, soit le navigateur bloque la position dans le widget : aucune demande ne s’est alors affichée.';
+    } else if (e.code === 2) {
+      message.textContent = 'Position indisponible. Vérifiez que la localisation est activée sur le téléphone.';
+    } else if (e.code === 3) {
+      message.textContent = 'Délai dépassé. Réessayez en extérieur ou avec une meilleure réception.';
+    } else {
+      message.textContent = 'Erreur : ' + (e.message || 'inconnue');
+    }
+    $('d-heure').textContent = new Date().toLocaleString('fr-FR');
+  }
+
+  function succes(pos) {
+    message.className = 'ok';
+    message.textContent = 'Position obtenue.';
+    $('d-lat').textContent = pos.coords.latitude.toFixed(6);
+    $('d-lon').textContent = pos.coords.longitude.toFixed(6);
+    $('d-prec').textContent = Math.round(pos.coords.accuracy) + ' m';
+    $('d-heure').textContent = new Date(pos.timestamp).toLocaleString('fr-FR');
+  }
+
+  bouton.addEventListener('click', function () {
+    if (!navigator.geolocation) {
+      message.className = 'ko';
+      message.textContent = 'Ce navigateur ne gère pas la géolocalisation.';
+      return;
+    }
+    bouton.disabled = true;
+    message.className = '';
+    message.textContent = 'Recherche de la position…';
+    navigator.geolocation.getCurrentPosition(
+      function (pos) { bouton.disabled = false; succes(pos); majPermission(); },
+      function (e) { bouton.disabled = false; erreur(e); majPermission(); },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+    );
+  });
+})();
+</script>
+</body>
+</html>
