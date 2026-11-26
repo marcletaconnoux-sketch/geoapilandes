@@ -3,125 +3,155 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Enregistrer ma position</title>
+<title>Position d’arrivée</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css">
 <script src="https://docs.getgrist.com/grist-plugin-api.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <style>
   :root {
-    --fond: #f6f7f4;
-    --texte: #1d2a24;
-    --discret: #5c6b63;
-    --accent: #1f6f50;
-    --accent-texte: #ffffff;
-    --ok: #1f6f50;
-    --ko: #a63a2b;
-    --cadre: #d3d9d4;
+    --fond: #fff6d6;
+    --texte: #111111;
+    --jaune: #ffc400;
+    --trait: #111111;
     --champ: #ffffff;
+    --ok: #0b5d2a;
+    --ko: #a1200f;
   }
   @media (prefers-color-scheme: dark) {
     :root {
-      --fond: #14191a;
-      --texte: #e8eee9;
-      --discret: #98a79e;
-      --accent: #4fb88b;
-      --accent-texte: #0c1512;
-      --ok: #4fb88b;
-      --ko: #ee8b79;
-      --cadre: #2c3835;
-      --champ: #1c2423;
+      --fond: #141108;
+      --texte: #ffe9a0;
+      --jaune: #ffc400;
+      --trait: #ffc400;
+      --champ: #221d0e;
+      --ok: #7fe0a0;
+      --ko: #ff9a86;
     }
   }
   * { box-sizing: border-box; }
   html, body { margin: 0; background: var(--fond); color: var(--texte); }
   body {
-    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-    padding: 16px;
-    max-width: 520px;
+    font-family: "Arial Black", "Helvetica Neue", Arial, sans-serif;
+    padding: 0 0 24px;
+    max-width: 560px;
     margin: 0 auto;
   }
-  label { display: block; font-size: .9rem; color: var(--discret); margin-bottom: 6px; }
+  .bande {
+    height: 16px;
+    background: repeating-linear-gradient(-45deg, #111111 0 14px, #ffc400 14px 28px);
+    border-bottom: 3px solid var(--trait);
+  }
+  main { padding: 16px; }
+  h1 {
+    font-size: 1.5rem;
+    line-height: 1.15;
+    margin: 4px 0 16px;
+    font-weight: 900;
+  }
+  label {
+    display: block;
+    font-size: .95rem;
+    font-weight: 900;
+    margin-bottom: 6px;
+  }
+  .facultatif { font-weight: 400; font-family: Arial, sans-serif; }
   input[type="text"] {
     width: 100%;
-    font-size: 1rem;
+    font: 1.05rem Arial, sans-serif;
     padding: 12px;
-    border: 1px solid var(--cadre);
-    border-radius: 10px;
+    border: 3px solid var(--trait);
+    border-radius: 0;
     background: var(--champ);
     color: var(--texte);
-    margin-bottom: 14px;
+    margin-bottom: 16px;
   }
-  input[type="text"]:focus-visible, button:focus-visible, .lien:focus-visible {
-    outline: 3px solid var(--texte);
+  input[type="text"]:focus-visible, button:focus-visible {
+    outline: 4px solid var(--jaune);
     outline-offset: 2px;
+    box-shadow: 0 0 0 7px var(--trait);
   }
-  button.principal {
+  #carte {
+    width: 100%;
+    height: 52vh;
+    min-height: 300px;
+    border: 3px solid var(--trait);
+    border-radius: 0;
+    box-shadow: 6px 6px 0 var(--trait);
+  }
+  #fond-carte { display: flex; gap: 10px; margin: 18px 0 12px; }
+  #fond-carte button {
+    flex: 1;
+    padding: 10px;
+    font: 900 .95rem "Arial Black", Arial, sans-serif;
+    border: 3px solid var(--trait);
+    border-radius: 0;
+    background: var(--champ);
+    color: var(--texte);
+    cursor: pointer;
+  }
+  #fond-carte button[aria-pressed="true"] { background: var(--jaune); color: #111111; }
+  #point-choisi {
+    font: 1rem Arial, sans-serif;
+    margin: 4px 0 14px;
+    min-height: 1.4em;
+    font-variant-numeric: tabular-nums;
+  }
+  #btn-valider {
     width: 100%;
     min-height: 76px;
-    font-size: 1.25rem;
-    font-weight: 600;
-    border: 0;
-    border-radius: 14px;
-    background: var(--accent);
-    color: var(--accent-texte);
+    font: 900 1.3rem "Arial Black", Arial, sans-serif;
+    border: 3px solid var(--trait);
+    border-radius: 0;
+    background: var(--jaune);
+    color: #111111;
+    box-shadow: 6px 6px 0 var(--trait);
     cursor: pointer;
   }
-  button:disabled { opacity: .6; cursor: progress; }
-  .lien {
-    display: block;
-    width: 100%;
-    margin-top: 14px;
-    padding: 12px;
-    background: none;
-    border: 1px solid var(--cadre);
-    border-radius: 10px;
+  #btn-valider:active:not(:disabled) { transform: translate(4px, 4px); box-shadow: 2px 2px 0 var(--trait); }
+  #btn-valider:disabled {
+    background: var(--champ);
     color: var(--texte);
-    font-size: 1rem;
-    cursor: pointer;
+    opacity: .55;
+    box-shadow: none;
+    cursor: not-allowed;
   }
-  #panneau-carte { display: none; margin-top: 16px; }
-  #panneau-carte.visible { display: block; }
-  #carte { width: 100%; height: 55vh; min-height: 280px; border-radius: 12px; border: 1px solid var(--cadre); }
-  #fond-carte { display: flex; gap: 8px; margin: 10px 0; }
-  #fond-carte button {
-    flex: 1; padding: 10px; font-size: .95rem;
-    border: 1px solid var(--cadre); border-radius: 10px;
-    background: var(--champ); color: var(--texte); cursor: pointer;
+  #message { margin-top: 18px; font: 700 1rem/1.45 Arial, sans-serif; min-height: 1.4em; }
+  .ok { color: var(--ok); }
+  .ko { color: var(--ko); }
+  #dernier {
+    display: none;
+    margin-top: 18px;
+    padding: 12px;
+    border: 3px solid var(--trait);
+    font: .95rem/1.5 Arial, sans-serif;
+    font-variant-numeric: tabular-nums;
   }
-  #fond-carte button[aria-pressed="true"] { border-color: var(--accent); font-weight: 600; }
-  #point-choisi { font-size: .95rem; color: var(--discret); margin: 6px 0 10px; min-height: 1.3em; }
-  #message { margin-top: 16px; font-size: .98rem; line-height: 1.45; min-height: 1.4em; }
-  .ok { color: var(--ok); font-weight: 600; }
-  .ko { color: var(--ko); font-weight: 600; }
-  #dernier { margin-top: 18px; border-top: 1px solid var(--cadre); padding-top: 10px; font-size: .9rem; color: var(--discret); display: none; }
   #dernier.visible { display: block; }
-  #dernier div { padding: 3px 0; font-variant-numeric: tabular-nums; }
+  .marqueur { width: 34px; height: 38px; }
 </style>
 </head>
 <body>
-  <label for="spot">Spot (facultatif)</label>
-  <input id="spot" type="text" autocomplete="off" placeholder="Nom ou numéro du spot">
+  <div class="bande" aria-hidden="true"></div>
+  <main>
+    <h1>Position d’arrivée</h1>
 
-  <button id="btn-gps" class="principal" type="button">Je suis arrivé : enregistrer ma position</button>
-  <button id="btn-carte" class="lien" type="button">Pointer ma position sur la carte</button>
+    <label for="nom">Nom</label>
+    <input id="nom" type="text" autocomplete="name" placeholder="Votre nom">
 
-  <div id="panneau-carte">
+    <label for="spot">Spot <span class="facultatif">(facultatif)</span></label>
+    <input id="spot" type="text" autocomplete="off" placeholder="Nom ou numéro du spot">
+
     <div id="carte" role="application" aria-label="Carte : touchez l’endroit où vous êtes"></div>
     <div id="fond-carte">
       <button type="button" id="fond-plan" aria-pressed="true">Plan</button>
       <button type="button" id="fond-photo" aria-pressed="false">Photo aérienne</button>
     </div>
     <div id="point-choisi">Touchez la carte à l’endroit où vous êtes.</div>
-    <button id="btn-valider" class="principal" type="button" disabled>Enregistrer ce point</button>
-  </div>
+    <button id="btn-valider" type="button" disabled>Enregistrer ce point</button>
 
-  <div id="message" role="status" aria-live="polite"></div>
-
-  <div id="dernier">
-    <div id="d-heure"></div>
-    <div id="d-coord"></div>
-    <div id="d-source"></div>
-  </div>
+    <div id="message" role="status" aria-live="polite"></div>
+    <div id="dernier"></div>
+  </main>
 
 <script>
 (function () {
@@ -133,7 +163,13 @@
     message.className = classe || '';
   }
 
-  // Grist : accès complet, la table doit être celle du widget (Positions)
+  // Mémorisation du nom sur l’appareil (si le navigateur l’autorise)
+  try {
+    var nomMemo = window.localStorage.getItem('geoloc_nom');
+    if (nomMemo) { $('nom').value = nomMemo; }
+  } catch (e) { /* stockage indisponible : sans conséquence */ }
+
+  // Grist : accès complet, le widget doit être lié à la table Positions
   var griste = !!(window.grist && typeof grist.ready === 'function');
   if (griste) {
     grist.ready({ requiredAccess: 'full' });
@@ -141,78 +177,29 @@
     dire('Ce widget doit être ouvert dans Grist.', 'ko');
   }
 
-  // Enregistrement d’une ligne. Toutes les lignes sont ajoutées, jamais modifiées.
-  function enregistrer(rec) {
-    if (!griste) { return Promise.reject(new Error('Hors Grist')); }
+  // Date du jour (jour local) au format attendu par une colonne Date de Grist
+  function dateDuJour() {
+    var d = new Date();
+    return Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 1000;
+  }
+
+  // Chaque enregistrement ajoute une ligne : rien n’est jamais modifié ni supprimé
+  function enregistrer(lat, lon) {
+    if (!griste) { return Promise.reject(new Error('hors Grist')); }
     var champs = {
-      Latitude: Math.round(rec.lat * 1e6) / 1e6,
-      Longitude: Math.round(rec.lon * 1e6) / 1e6,
-      Precision_m: rec.precision == null ? null : Math.round(rec.precision),
-      Heure_appareil: Math.floor(Date.now() / 1000),
-      Spot: $('spot').value.trim(),
-      Source: rec.source
+      Nom: $('nom').value.trim(),
+      Date: dateDuJour(),
+      Latitude: Math.round(lat * 1e6) / 1e6,
+      Longitude: Math.round(lon * 1e6) / 1e6,
+      Spot: $('spot').value.trim()
     };
-    return grist.getTable().create({ fields: champs }).then(function () {
-      return champs;
-    });
+    return grist.getTable().create({ fields: champs }).then(function () { return champs; });
   }
 
-  function afficherDernier(c) {
-    $('dernier').className = 'visible';
-    $('d-heure').textContent = 'Dernier enregistrement : ' + new Date().toLocaleString('fr-FR');
-    $('d-coord').textContent = c.Latitude.toFixed(6) + ', ' + c.Longitude.toFixed(6);
-    $('d-source').textContent = 'Source : ' + c.Source +
-      (c.Precision_m == null ? '' : ' (précision ' + c.Precision_m + ' m)');
-  }
-
-  function echecEcriture(e) {
-    var detail = (e && e.message) ? e.message : 'erreur inconnue';
-    dire('La position n’a pas pu être enregistrée (' + detail + '). Vérifiez que le widget est lié à la table Positions et que vous avez le droit d’ajouter des lignes, puis réessayez.', 'ko');
-  }
-
-  // ---- Plan A : GPS ----
-  var btnGps = $('btn-gps');
-  btnGps.addEventListener('click', function () {
-    if (!navigator.geolocation) {
-      dire('Le GPS n’est pas disponible. Pointez votre position sur la carte.', 'ko');
-      ouvrirCarte();
-      return;
-    }
-    btnGps.disabled = true;
-    dire('Recherche de la position…');
-    navigator.geolocation.getCurrentPosition(
-      function (pos) {
-        enregistrer({
-          lat: pos.coords.latitude,
-          lon: pos.coords.longitude,
-          precision: pos.coords.accuracy,
-          source: 'GPS'
-        }).then(function (c) {
-          btnGps.disabled = false;
-          dire('Position enregistrée.', 'ok');
-          afficherDernier(c);
-        }).catch(function (e) {
-          btnGps.disabled = false;
-          echecEcriture(e);
-        });
-      },
-      function (err) {
-        btnGps.disabled = false;
-        var raison = err.code === 1 ? 'Accès à la position refusé ou bloqué.'
-                   : err.code === 2 ? 'Position indisponible.'
-                   : err.code === 3 ? 'Délai dépassé.'
-                   : 'Erreur de géolocalisation.';
-        dire(raison + ' Pointez votre position sur la carte.', 'ko');
-        ouvrirCarte();
-      },
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
-    );
-  });
-
-  // ---- Plan B : carte ----
-  var carte = null;
+  // ---- Carte ----
+  var carte;
   var marqueur = null;
-  var pointChoisi = null;
+  var point = null;
 
   function tuiles(couche, format) {
     return 'https://data.geopf.fr/wmts?SERVICE=WMTS&VERSION=1.0.0&REQUEST=GetTile' +
@@ -220,35 +207,44 @@
       '&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}';
   }
 
-  function initCarte() {
-    carte = new maplibregl.Map({
-      container: 'carte',
-      style: {
-        version: 8,
-        sources: {
-          plan: { type: 'raster', tileSize: 256, maxzoom: 19,
-                  tiles: [tuiles('GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2', 'image/png')],
-                  attribution: '© IGN' },
-          photo: { type: 'raster', tileSize: 256, maxzoom: 19,
-                   tiles: [tuiles('ORTHOIMAGERY.ORTHOPHOTOS', 'image/jpeg')],
-                   attribution: '© IGN' }
-        },
-        layers: [
-          { id: 'plan', type: 'raster', source: 'plan' },
-          { id: 'photo', type: 'raster', source: 'photo', layout: { visibility: 'none' } }
-        ]
+  carte = new maplibregl.Map({
+    container: 'carte',
+    style: {
+      version: 8,
+      sources: {
+        plan: { type: 'raster', tileSize: 256, maxzoom: 19,
+                tiles: [tuiles('GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2', 'image/png')],
+                attribution: '© IGN' },
+        photo: { type: 'raster', tileSize: 256, maxzoom: 19,
+                 tiles: [tuiles('ORTHOIMAGERY.ORTHOPHOTOS', 'image/jpeg')],
+                 attribution: '© IGN' }
       },
-      center: [-0.75, 43.25],
-      zoom: 9
-    });
-    carte.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
-    carte.on('click', function (e) { poserPoint(e.lngLat.lat, e.lngLat.lng); });
+      layers: [
+        { id: 'plan', type: 'raster', source: 'plan' },
+        { id: 'photo', type: 'raster', source: 'photo', layout: { visibility: 'none' } }
+      ]
+    },
+    center: [-0.75, 43.25],
+    zoom: 9
+  });
+  carte.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+
+  // Repère en forme d’alvéole (hexagone)
+  function elementMarqueur() {
+    var el = document.createElement('div');
+    el.className = 'marqueur';
+    el.innerHTML =
+      '<svg viewBox="0 0 34 38" width="34" height="38" aria-hidden="true">' +
+      '<polygon points="17,2 31,10 31,28 17,36 3,28 3,10" fill="#ffc400" stroke="#111111" stroke-width="3"/>' +
+      '<circle cx="17" cy="19" r="4" fill="#111111"/></svg>';
+    return el;
   }
 
   function poserPoint(lat, lon) {
-    pointChoisi = { lat: lat, lon: lon };
+    point = { lat: lat, lon: lon };
     if (!marqueur) {
-      marqueur = new maplibregl.Marker({ draggable: true }).setLngLat([lon, lat]).addTo(carte);
+      marqueur = new maplibregl.Marker({ element: elementMarqueur(), draggable: true, anchor: 'center' })
+        .setLngLat([lon, lat]).addTo(carte);
       marqueur.on('dragend', function () {
         var p = marqueur.getLngLat();
         poserPoint(p.lat, p.lng);
@@ -260,12 +256,14 @@
     $('btn-valider').disabled = false;
   }
 
-  function ouvrirCarte() {
-    $('panneau-carte').className = 'visible';
-    if (!carte) { initCarte(); } else { carte.resize(); }
+  function retirerPoint() {
+    point = null;
+    if (marqueur) { marqueur.remove(); marqueur = null; }
+    $('point-choisi').textContent = 'Touchez la carte à l’endroit où vous êtes.';
+    $('btn-valider').disabled = true;
   }
 
-  $('btn-carte').addEventListener('click', ouvrirCarte);
+  carte.on('click', function (e) { poserPoint(e.lngLat.lat, e.lngLat.lng); });
 
   function basculerFond(photo) {
     carte.setLayoutProperty('plan', 'visibility', photo ? 'none' : 'visible');
@@ -273,26 +271,35 @@
     $('fond-plan').setAttribute('aria-pressed', photo ? 'false' : 'true');
     $('fond-photo').setAttribute('aria-pressed', photo ? 'true' : 'false');
   }
-  $('fond-plan').addEventListener('click', function () { if (carte) { basculerFond(false); } });
-  $('fond-photo').addEventListener('click', function () { if (carte) { basculerFond(true); } });
+  $('fond-plan').addEventListener('click', function () { basculerFond(false); });
+  $('fond-photo').addEventListener('click', function () { basculerFond(true); });
 
+  // ---- Enregistrement ----
   $('btn-valider').addEventListener('click', function () {
-    if (!pointChoisi) { return; }
+    if (!point) { return; }
+    var nom = $('nom').value.trim();
+    if (!nom) {
+      dire('Indiquez votre nom avant d’enregistrer.', 'ko');
+      $('nom').focus();
+      return;
+    }
+    try { window.localStorage.setItem('geoloc_nom', nom); } catch (e) { /* sans conséquence */ }
+
     var btn = $('btn-valider');
     btn.disabled = true;
     dire('Enregistrement…');
-    enregistrer({
-      lat: pointChoisi.lat,
-      lon: pointChoisi.lon,
-      precision: null,
-      source: 'Pointé sur carte'
-    }).then(function (c) {
-      btn.disabled = false;
+    enregistrer(point.lat, point.lon).then(function (c) {
       dire('Position enregistrée.', 'ok');
-      afficherDernier(c);
+      var zone = $('dernier');
+      zone.className = 'visible';
+      zone.textContent = c.Nom + (c.Spot ? ' · ' + c.Spot : '') + ' · ' +
+        c.Latitude.toFixed(6) + ', ' + c.Longitude.toFixed(6) + ' · ' +
+        new Date().toLocaleString('fr-FR');
+      retirerPoint();
     }).catch(function (e) {
       btn.disabled = false;
-      echecEcriture(e);
+      dire('La position n’a pas pu être enregistrée (' + (e && e.message ? e.message : 'erreur inconnue') +
+        '). Vérifiez que le widget est lié à la table Positions et que vous pouvez y ajouter des lignes, puis réessayez.', 'ko');
     });
   });
 })();
