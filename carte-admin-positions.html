@@ -45,7 +45,8 @@
       layers: [ { id:'plan', type:'raster', source:'plan' } ] },
     center: [-0.9, 44.0], zoom: 7
   });
-  carte.addControl(new maplibregl.NavigationControl({ showCompass:false }), 'top-right');
+  carte.addControl(new maplibregl.NavigationControl({ showCompass:true, visualizePitch:false }), 'top-right');
+  carte.addControl(new maplibregl.ScaleControl({ maxWidth:100, unit:'metric' }), 'bottom-left');
   carte.on('load', function () {
     fetch('aire-miel-des-landes.geojson').then(function (r) { return r.json(); }).then(function (g) {
       carte.addSource('aire', { type:'geojson', data:g });
@@ -75,7 +76,7 @@
       if (!actif && !avecRetires) { return; }
       var html = document.createElement('div');
       html.style.cssText = 'font:14px/1.4 Arial,sans-serif;color:#111';
-      [['Nom', r.Nom], ['Spot', r.Spot], ['Date', fmtDate(r.Date)], ['Enregistré', fmtHeure(r.Horodatage)],
+      [['Nom', r.Nom], ['Commune', r.Commune], ['Spot', r.Spot], ['Date', fmtDate(r.Date)], ['Enregistré', fmtHeure(r.Horodatage)],
        ['Statut', actif ? 'actif' : 'retiré le ' + fmtHeure(r.Retire_le)], ['Zone', r.Hors_zone ? 'hors zone' : 'dans la zone']]
         .forEach(function (p) { if (p[1]) { var d = document.createElement('div'); d.textContent = p[0] + ' : ' + p[1]; html.appendChild(d); } });
       marqueurs.push(new maplibregl.Marker({ element: hexa(actif), anchor:'center' }).setLngLat([r.Longitude, r.Latitude])
