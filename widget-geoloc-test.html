@@ -24,7 +24,7 @@
   input[type=text] { width:100%; font:1.05rem Arial,sans-serif; padding:12px; margin-bottom:16px;
     border:3px solid var(--trait); border-radius:0; background:var(--champ); color:var(--texte); }
   :focus-visible { outline:4px solid var(--jaune); outline-offset:2px; box-shadow:0 0 0 7px var(--trait); }
-  #carte { width:100%; height:45vh; min-height:280px; border:3px solid var(--trait); box-shadow:6px 6px 0 var(--trait); }
+  #carte { width:100%; height:45vh; min-height:280px; border:3px solid var(--trait); }
   .choix { display:flex; gap:10px; margin:18px 0 12px; }
   .choix button, .retirer { flex:1; min-height:48px; padding:10px; font:900 .95rem "Arial Black",Arial,sans-serif;
     border:3px solid var(--trait); border-radius:0; background:var(--champ); color:var(--texte); cursor:pointer; }
@@ -99,7 +99,8 @@
       'CooperativeGesturesHandler.MobileHelpText': 'Deux doigts pour déplacer la carte'
     }
   });
-  carte.addControl(new maplibregl.NavigationControl({ showCompass:false }), 'top-right');
+  carte.addControl(new maplibregl.NavigationControl({ showCompass:true, visualizePitch:false }), 'top-right');
+  carte.addControl(new maplibregl.ScaleControl({ maxWidth:100, unit:'metric' }), 'bottom-left');
 
   function fond(photo) {
     carte.setLayoutProperty('plan', 'visibility', photo ? 'none' : 'visible');
@@ -170,6 +171,16 @@
     $('zone').textContent = ''; $('btn-valider').disabled = true;
   }
 
+  // Commune du point (API Géo, données officielles)
+  function commune(lat, lon) {
+    var delai = new Promise(function (ok) { setTimeout(function () { ok(''); }, 5000); });
+    var appel = fetch('https://geo.api.gouv.fr/communes?lat=' + lat + '&lon=' + lon + '&fields=nom&limit=1')
+      .then(function (r) { return r.json(); })
+      .then(function (a) { return (a[0] && a[0].nom) || ''; })
+      .catch(function () { return ''; });
+    return Promise.race([appel, delai]);
+  }
+
   // ---- Enregistrement : une ligne ajoutée par point ----
   $('btn-valider').onclick = function () {
     var nom = $('nom').value.trim();
@@ -178,14 +189,15 @@
     try { localStorage.setItem('geoloc_nom', nom); } catch (e) {}
     var p = nouveau.getLngLat(), d = new Date();
     $('btn-valider').disabled = true; dire('Enregistrement…');
-    grist.getTable().create({ fields: {
+    commune(p.lat, p.lng).then(function (ville) { return grist.getTable().create({ fields: {
       Nom: nom,
+      Commune: ville,
       Date: Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 1000,
       Latitude: Math.round(p.lat * 1e6) / 1e6,
       Longitude: Math.round(p.lng * 1e6) / 1e6,
       Spot: $('spot').value.trim(),
       Hors_zone: horsZone
-    } }).then(function () { dire('Point enregistré.', 'ok'); viderNouveau(); })
+    } }); }).then(function () { dire('Point enregistré.', 'ok'); viderNouveau(); })
       .catch(function (e) { $('btn-valider').disabled = false;
         dire('Enregistrement impossible (' + (e && e.message || 'erreur') + ').', 'ko'); });
   };
@@ -203,7 +215,9 @@
       txt.className = 'txt';
       txt.textContent = r.Spot || 'Sans nom de spot';
       var s = document.createElement('small');
-      s.textContent = r.Latitude.toFixed(5) + ', ' + r.Longitude.toFixed(5) + (r.Hors_zone ? ' · hors zone' : '');
+      var suffixe = r.Hors_zone ? ' · hors zone' : '';
+      s.textContent = (r.Commune || 'Commune…') + suffixe;
+      if (!r.Commune) { commune(r.Latitude, r.Longitude).then(function (v) { s.textContent = (v || 'Commune inconnue') + suffixe; }); }
       txt.appendChild(s);
       txt.onclick = function () { carte.flyTo({ center:[r.Longitude, r.Latitude], zoom:15 }); };
       b.className = 'retirer'; b.type = 'button'; b.textContent = 'Retirer';
