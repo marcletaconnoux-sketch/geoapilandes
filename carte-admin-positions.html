@@ -13,8 +13,6 @@
   * { box-sizing: border-box; }
   html, body { height:100%; margin:0; background:var(--fond); color:var(--texte); }
   body { display:flex; flex-direction:column; font:.95rem Arial,sans-serif; }
-  .bande { height:12px; flex:none; border-bottom:3px solid var(--trait);
-    background:repeating-linear-gradient(-45deg,#111 0 14px,#ffc400 14px 28px); }
   .barre { flex:none; display:flex; flex-wrap:wrap; gap:10px; align-items:center; padding:8px 10px; border-bottom:3px solid var(--trait); }
   select, label { font:inherit; }
   select { padding:6px; border:3px solid var(--trait); border-radius:0; background:var(--champ); color:var(--texte); }
@@ -25,7 +23,6 @@
 </style>
 </head>
 <body>
-<div class="bande" aria-hidden="true"></div>
 <div class="barre">
   <label>Personne <select id="qui"><option value="">Toutes</option></select></label>
   <label><input type="checkbox" id="retires" checked> Afficher les points retirés</label>
