@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Carte d’administration</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css">
+<script src="https://docs.getgrist.com/grist-plugin-api.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<style>
+  :root { --fond:#fff6d6; --texte:#111; --trait:#111; --champ:#fff; }
+  @media (prefers-color-scheme: dark) { :root { --fond:#141108; --texte:#ffe9a0; --trait:#ffc400; --champ:#221d0e; } }
+  * { box-sizing: border-box; }
+  html, body { height:100%; margin:0; background:var(--fond); color:var(--texte); }
+  body { display:flex; flex-direction:column; font:.95rem Arial,sans-serif; }
+  .bande { height:12px; flex:none; border-bottom:3px solid var(--trait);
+    background:repeating-linear-gradient(-45deg,#111 0 14px,#ffc400 14px 28px); }
+  .barre { flex:none; display:flex; flex-wrap:wrap; gap:10px; align-items:center; padding:8px 10px; border-bottom:3px solid var(--trait); }
+  select, label { font:inherit; }
+  select { padding:6px; border:3px solid var(--trait); border-radius:0; background:var(--champ); color:var(--texte); }
+  #compte { margin-left:auto; font-weight:700; }
+  #carte { flex:1; min-height:240px; }
+  .leg { display:inline-block; width:12px; height:12px; border:2px solid #111; margin-right:4px; vertical-align:-1px; }
+  :focus-visible { outline:3px solid #ffc400; outline-offset:2px; box-shadow:0 0 0 5px var(--trait); }
+</style>
+</head>
+<body>
+<div class="bande" aria-hidden="true"></div>
+<div class="barre">
+  <label>Personne <select id="qui"><option value="">Toutes</option></select></label>
+  <label><input type="checkbox" id="retires" checked> Afficher les points retirés</label>
+  <span><span class="leg" style="background:#ffc400"></span>actif <span class="leg" style="background:#8a8a8a;margin-left:8px"></span>retiré</span>
+  <span id="compte" role="status"></span>
+</div>
+<div id="carte"></div>
+
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  function tuiles(l, f) {
+    return 'https://data.geopf.fr/wmts?SERVICE=WMTS&VERSION=1.0.0&REQUEST=GetTile&LAYER=' + l +
+      '&STYLE=normal&FORMAT=' + f + '&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}';
+  }
+  var carte = new maplibregl.Map({
+    container: 'carte',
+    style: { version: 8,
+      sources: { plan: { type:'raster', tileSize:256, maxzoom:19, tiles:[tuiles('GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2','image/png')], attribution:'© IGN' } },
+      layers: [ { id:'plan', type:'raster', source:'plan' } ] },
+    center: [-0.9, 44.0], zoom: 7
+  });
+  carte.addControl(new maplibregl.NavigationControl({ showCompass:false }), 'top-right');
+  carte.on('load', function () {
+    fetch('aire-miel-des-landes.geojson').then(function (r) { return r.json(); }).then(function (g) {
+      carte.addSource('aire', { type:'geojson', data:g });
+      carte.addLayer({ id:'aire-fond', type:'fill', source:'aire', paint:{ 'fill-color':'#ffc400', 'fill-opacity':.2 } });
+      carte.addLayer({ id:'aire-trait', type:'line', source:'aire', paint:{ 'line-color':'#111', 'line-width':2.5 } });
+    }).catch(function () {});
+  });
+
+  var lignes = [], marqueurs = [], recadre = true;
+  function fmtDate(s) { return s ? new Date(s * 1000).toLocaleDateString('fr-FR') : ''; }
+  function fmtHeure(s) { return s ? new Date(s * 1000).toLocaleString('fr-FR') : ''; }
+
+  function hexa(actif) {
+    var el = document.createElement('div');
+    el.innerHTML = '<svg viewBox="0 0 34 38" width="28" height="31" aria-hidden="true"><polygon points="17,2 31,10 31,28 17,36 3,28 3,10" fill="' +
+      (actif ? '#ffc400' : '#8a8a8a') + '" stroke="#111" stroke-width="3"/>' + (actif ? '' : '<line x1="9" y1="19" x2="25" y2="19" stroke="#111" stroke-width="3"/>') + '</svg>';
+    return el;
+  }
+
+  function afficher() {
+    marqueurs.forEach(function (m) { m.remove(); }); marqueurs = [];
+    var qui = $('qui').value, avecRetires = $('retires').checked, b = new maplibregl.LngLatBounds(), n = 0, na = 0;
+    lignes.forEach(function (r) {
+      if (r.Latitude == null || r.Longitude == null) { return; }
+      if (qui && r.Nom !== qui) { return; }
+      var actif = !r.Retire_le;
+      if (!actif && !avecRetires) { return; }
+      var html = document.createElement('div');
+      html.style.cssText = 'font:14px/1.4 Arial,sans-serif;color:#111';
+      [['Nom', r.Nom], ['Spot', r.Spot], ['Date', fmtDate(r.Date)], ['Enregistré', fmtHeure(r.Horodatage)],
+       ['Statut', actif ? 'actif' : 'retiré le ' + fmtHeure(r.Retire_le)], ['Zone', r.Hors_zone ? 'hors zone' : 'dans la zone']]
+        .forEach(function (p) { if (p[1]) { var d = document.createElement('div'); d.textContent = p[0] + ' : ' + p[1]; html.appendChild(d); } });
+      marqueurs.push(new maplibregl.Marker({ element: hexa(actif), anchor:'center' }).setLngLat([r.Longitude, r.Latitude])
+        .setPopup(new maplibregl.Popup({ offset:14 }).setDOMContent(html)).addTo(carte));
+      b.extend([r.Longitude, r.Latitude]); n++; if (actif) { na++; }
+    });
+    $('compte').textContent = n + ' point' + (n > 1 ? 's' : '') + ' (' + na + ' actif' + (na > 1 ? 's' : '') + ')';
+    if (recadre && n) { carte.fitBounds(b, { padding:50, maxZoom:14, animate:false }); recadre = false; }
+  }
+
+  $('qui').onchange = function () { recadre = true; afficher(); };
+  $('retires').onchange = afficher;
+
+  grist.ready({ requiredAccess: 'read table' });
+  grist.onRecords(function (recs) {
+    lignes = recs;
+    var cur = $('qui').value, noms = {};
+    recs.forEach(function (r) { if (r.Nom) { noms[r.Nom] = 1; } });
+    $('qui').innerHTML = '<option value="">Toutes</option>' + Object.keys(noms).sort().map(function (k) {
+      var o = document.createElement('option'); o.value = k; o.textContent = k; return o.outerHTML; }).join('');
+    $('qui').value = noms[cur] ? cur : '';
+    afficher();
+  });
+})();
+</script>
+</body>
+</html>
