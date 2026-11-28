@@ -3,305 +3,215 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Position d’arrivée</title>
+<title>Mes points</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css">
 <script src="https://docs.getgrist.com/grist-plugin-api.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <style>
-  :root {
-    --fond: #fff6d6;
-    --texte: #111111;
-    --jaune: #ffc400;
-    --trait: #111111;
-    --champ: #ffffff;
-    --ok: #0b5d2a;
-    --ko: #a1200f;
-  }
+  :root { --fond:#fff6d6; --texte:#111; --jaune:#ffc400; --trait:#111; --champ:#fff; --ok:#0b5d2a; --ko:#a1200f; }
   @media (prefers-color-scheme: dark) {
-    :root {
-      --fond: #141108;
-      --texte: #ffe9a0;
-      --jaune: #ffc400;
-      --trait: #ffc400;
-      --champ: #221d0e;
-      --ok: #7fe0a0;
-      --ko: #ff9a86;
-    }
+    :root { --fond:#141108; --texte:#ffe9a0; --trait:#ffc400; --champ:#221d0e; --ok:#7fe0a0; --ko:#ff9a86; }
   }
   * { box-sizing: border-box; }
-  html, body { margin: 0; background: var(--fond); color: var(--texte); }
-  body {
-    font-family: "Arial Black", "Helvetica Neue", Arial, sans-serif;
-    padding: 0 0 24px;
-    max-width: 560px;
-    margin: 0 auto;
-  }
-  .bande {
-    height: 16px;
-    background: repeating-linear-gradient(-45deg, #111111 0 14px, #ffc400 14px 28px);
-    border-bottom: 3px solid var(--trait);
-  }
-  main { padding: 16px; }
-  h1 {
-    font-size: 1.5rem;
-    line-height: 1.15;
-    margin: 4px 0 16px;
-    font-weight: 900;
-  }
-  label {
-    display: block;
-    font-size: .95rem;
-    font-weight: 900;
-    margin-bottom: 6px;
-  }
-  .facultatif { font-weight: 400; font-family: Arial, sans-serif; }
-  input[type="text"] {
-    width: 100%;
-    font: 1.05rem Arial, sans-serif;
-    padding: 12px;
-    border: 3px solid var(--trait);
-    border-radius: 0;
-    background: var(--champ);
-    color: var(--texte);
-    margin-bottom: 16px;
-  }
-  input[type="text"]:focus-visible, button:focus-visible {
-    outline: 4px solid var(--jaune);
-    outline-offset: 2px;
-    box-shadow: 0 0 0 7px var(--trait);
-  }
-  #carte {
-    width: 100%;
-    height: 52vh;
-    min-height: 300px;
-    border: 3px solid var(--trait);
-    border-radius: 0;
-    box-shadow: 6px 6px 0 var(--trait);
-  }
-  #fond-carte { display: flex; gap: 10px; margin: 18px 0 12px; }
-  #fond-carte button {
-    flex: 1;
-    padding: 10px;
-    font: 900 .95rem "Arial Black", Arial, sans-serif;
-    border: 3px solid var(--trait);
-    border-radius: 0;
-    background: var(--champ);
-    color: var(--texte);
-    cursor: pointer;
-  }
-  #fond-carte button[aria-pressed="true"] { background: var(--jaune); color: #111111; }
-  #point-choisi {
-    font: 1rem Arial, sans-serif;
-    margin: 4px 0 14px;
-    min-height: 1.4em;
-    font-variant-numeric: tabular-nums;
-  }
-  #btn-valider {
-    width: 100%;
-    min-height: 76px;
-    font: 900 1.3rem "Arial Black", Arial, sans-serif;
-    border: 3px solid var(--trait);
-    border-radius: 0;
-    background: var(--jaune);
-    color: #111111;
-    box-shadow: 6px 6px 0 var(--trait);
-    cursor: pointer;
-  }
-  #btn-valider:active:not(:disabled) { transform: translate(4px, 4px); box-shadow: 2px 2px 0 var(--trait); }
-  #btn-valider:disabled {
-    background: var(--champ);
-    color: var(--texte);
-    opacity: .55;
-    box-shadow: none;
-    cursor: not-allowed;
-  }
-  #message { margin-top: 18px; font: 700 1rem/1.45 Arial, sans-serif; min-height: 1.4em; }
-  .ok { color: var(--ok); }
-  .ko { color: var(--ko); }
-  #dernier {
-    display: none;
-    margin-top: 18px;
-    padding: 12px;
-    border: 3px solid var(--trait);
-    font: .95rem/1.5 Arial, sans-serif;
-    font-variant-numeric: tabular-nums;
-  }
-  #dernier.visible { display: block; }
-  .marqueur { width: 34px; height: 38px; }
+  html, body { margin:0; background:var(--fond); color:var(--texte); }
+  body { font-family:"Arial Black","Helvetica Neue",Arial,sans-serif; max-width:560px; margin:0 auto; padding-bottom:24px; }
+  .bande { height:16px; border-bottom:3px solid var(--trait);
+    background:repeating-linear-gradient(-45deg,#111 0 14px,#ffc400 14px 28px); }
+  main { padding:16px; }
+  h1 { font-size:1.5rem; margin:4px 0 16px; font-weight:900; }
+  h2 { font-size:1.1rem; margin:24px 0 8px; font-weight:900; }
+  label { display:block; font-size:.95rem; font-weight:900; margin-bottom:6px; }
+  .fac { font-weight:400; font-family:Arial,sans-serif; }
+  input[type=text] { width:100%; font:1.05rem Arial,sans-serif; padding:12px; margin-bottom:16px;
+    border:3px solid var(--trait); border-radius:0; background:var(--champ); color:var(--texte); }
+  :focus-visible { outline:4px solid var(--jaune); outline-offset:2px; box-shadow:0 0 0 7px var(--trait); }
+  #carte { width:100%; height:50vh; min-height:300px; border:3px solid var(--trait); box-shadow:6px 6px 0 var(--trait); }
+  .choix { display:flex; gap:10px; margin:18px 0 12px; }
+  .choix button, .retirer { flex:1; padding:10px; font:900 .95rem "Arial Black",Arial,sans-serif;
+    border:3px solid var(--trait); border-radius:0; background:var(--champ); color:var(--texte); cursor:pointer; }
+  .choix button[aria-pressed=true] { background:var(--jaune); color:#111; }
+  #point-choisi { font:1rem Arial,sans-serif; margin:4px 0 4px; min-height:1.4em; font-variant-numeric:tabular-nums; }
+  #zone { font:900 1.05rem Arial,sans-serif; min-height:1.5em; margin-bottom:12px; }
+  #btn-valider { width:100%; min-height:76px; font:900 1.3rem "Arial Black",Arial,sans-serif; border:3px solid var(--trait);
+    border-radius:0; background:var(--jaune); color:#111; box-shadow:6px 6px 0 var(--trait); cursor:pointer; }
+  #btn-valider:active:not(:disabled) { transform:translate(4px,4px); box-shadow:2px 2px 0 var(--trait); }
+  #btn-valider:disabled { background:var(--champ); color:var(--texte); opacity:.55; box-shadow:none; cursor:not-allowed; }
+  #message { margin-top:16px; font:700 1rem/1.45 Arial,sans-serif; min-height:1.4em; }
+  .ok { color:var(--ok); } .ko { color:var(--ko); }
+  ul { list-style:none; margin:0; padding:0; border-top:3px solid var(--trait); }
+  li { display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:3px solid var(--trait); font:1rem Arial,sans-serif; }
+  li .txt { flex:1; cursor:pointer; } li .txt small { display:block; opacity:.8; }
+  .retirer { flex:0 0 auto; }
+  .vide { font:1rem Arial,sans-serif; padding:10px 0; }
 </style>
 </head>
 <body>
-  <div class="bande" aria-hidden="true"></div>
-  <main>
-    <h1>Position d’arrivée</h1>
+<div class="bande" aria-hidden="true"></div>
+<main>
+  <h1>Mes points</h1>
+  <label for="nom">Nom</label>
+  <input id="nom" type="text" autocomplete="name" placeholder="Votre nom">
+  <label for="spot">Spot <span class="fac">(facultatif)</span></label>
+  <input id="spot" type="text" autocomplete="off" placeholder="Nom ou numéro du spot">
 
-    <label for="nom">Nom</label>
-    <input id="nom" type="text" autocomplete="name" placeholder="Votre nom">
+  <div id="carte" role="application" aria-label="Carte : touchez l’endroit où vous êtes"></div>
+  <div class="choix">
+    <button type="button" id="fond-plan" aria-pressed="true">Plan</button>
+    <button type="button" id="fond-photo" aria-pressed="false">Photo aérienne</button>
+  </div>
+  <div id="point-choisi">Touchez la carte pour placer un point.</div>
+  <div id="zone" role="status" aria-live="polite"></div>
+  <button id="btn-valider" type="button" disabled>Enregistrer ce point</button>
+  <div id="message" role="status" aria-live="polite"></div>
 
-    <label for="spot">Spot <span class="facultatif">(facultatif)</span></label>
-    <input id="spot" type="text" autocomplete="off" placeholder="Nom ou numéro du spot">
-
-    <div id="carte" role="application" aria-label="Carte : touchez l’endroit où vous êtes"></div>
-    <div id="fond-carte">
-      <button type="button" id="fond-plan" aria-pressed="true">Plan</button>
-      <button type="button" id="fond-photo" aria-pressed="false">Photo aérienne</button>
-    </div>
-    <div id="point-choisi">Touchez la carte à l’endroit où vous êtes.</div>
-    <button id="btn-valider" type="button" disabled>Enregistrer ce point</button>
-
-    <div id="message" role="status" aria-live="polite"></div>
-    <div id="dernier"></div>
-  </main>
+  <h2>Mes points actifs</h2>
+  <ul id="liste"></ul>
+</main>
 
 <script>
 (function () {
   var $ = function (id) { return document.getElementById(id); };
-  var message = $('message');
+  function dire(t, c) { $('message').textContent = t; $('message').className = c || ''; }
 
-  function dire(texte, classe) {
-    message.textContent = texte;
-    message.className = classe || '';
-  }
+  try { var n = localStorage.getItem('geoloc_nom'); if (n) { $('nom').value = n; } } catch (e) {}
 
-  // Mémorisation du nom sur l’appareil (si le navigateur l’autorise)
-  try {
-    var nomMemo = window.localStorage.getItem('geoloc_nom');
-    if (nomMemo) { $('nom').value = nomMemo; }
-  } catch (e) { /* stockage indisponible : sans conséquence */ }
-
-  // Grist : accès complet, le widget doit être lié à la table Positions
-  var griste = !!(window.grist && typeof grist.ready === 'function');
-  if (griste) {
-    grist.ready({ requiredAccess: 'full' });
-  } else {
-    dire('Ce widget doit être ouvert dans Grist.', 'ko');
-  }
-
-  // Date du jour (jour local) au format attendu par une colonne Date de Grist
-  function dateDuJour() {
-    var d = new Date();
-    return Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 1000;
-  }
-
-  // Chaque enregistrement ajoute une ligne : rien n’est jamais modifié ni supprimé
-  function enregistrer(lat, lon) {
-    if (!griste) { return Promise.reject(new Error('hors Grist')); }
-    var champs = {
-      Nom: $('nom').value.trim(),
-      Date: dateDuJour(),
-      Latitude: Math.round(lat * 1e6) / 1e6,
-      Longitude: Math.round(lon * 1e6) / 1e6,
-      Spot: $('spot').value.trim()
-    };
-    return grist.getTable().create({ fields: champs }).then(function () { return champs; });
-  }
+  var griste = !!(window.grist && grist.ready);
+  if (griste) { grist.ready({ requiredAccess: 'full' }); } else { dire('Ce widget doit être ouvert dans Grist.', 'ko'); }
 
   // ---- Carte ----
-  var carte;
-  var marqueur = null;
-  var point = null;
-
-  function tuiles(couche, format) {
-    return 'https://data.geopf.fr/wmts?SERVICE=WMTS&VERSION=1.0.0&REQUEST=GetTile' +
-      '&LAYER=' + couche + '&STYLE=normal&FORMAT=' + format +
-      '&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}';
+  function tuiles(l, f) {
+    return 'https://data.geopf.fr/wmts?SERVICE=WMTS&VERSION=1.0.0&REQUEST=GetTile&LAYER=' + l +
+      '&STYLE=normal&FORMAT=' + f + '&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}';
   }
-
-  carte = new maplibregl.Map({
+  var carte = new maplibregl.Map({
     container: 'carte',
-    style: {
-      version: 8,
+    style: { version: 8,
       sources: {
-        plan: { type: 'raster', tileSize: 256, maxzoom: 19,
-                tiles: [tuiles('GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2', 'image/png')],
-                attribution: '© IGN' },
-        photo: { type: 'raster', tileSize: 256, maxzoom: 19,
-                 tiles: [tuiles('ORTHOIMAGERY.ORTHOPHOTOS', 'image/jpeg')],
-                 attribution: '© IGN' }
-      },
-      layers: [
-        { id: 'plan', type: 'raster', source: 'plan' },
-        { id: 'photo', type: 'raster', source: 'photo', layout: { visibility: 'none' } }
-      ]
-    },
-    center: [-0.75, 43.25],
-    zoom: 9
+        plan: { type:'raster', tileSize:256, maxzoom:19, tiles:[tuiles('GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2','image/png')], attribution:'© IGN' },
+        photo: { type:'raster', tileSize:256, maxzoom:19, tiles:[tuiles('ORTHOIMAGERY.ORTHOPHOTOS','image/jpeg')], attribution:'© IGN' } },
+      layers: [ { id:'plan', type:'raster', source:'plan' },
+                { id:'photo', type:'raster', source:'photo', layout:{ visibility:'none' } } ] },
+    center: [-0.9, 44.0], zoom: 7
   });
-  carte.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  carte.addControl(new maplibregl.NavigationControl({ showCompass:false }), 'top-right');
 
-  // Repère en forme d’alvéole (hexagone)
-  function elementMarqueur() {
-    var el = document.createElement('div');
-    el.className = 'marqueur';
-    el.innerHTML =
-      '<svg viewBox="0 0 34 38" width="34" height="38" aria-hidden="true">' +
-      '<polygon points="17,2 31,10 31,28 17,36 3,28 3,10" fill="#ffc400" stroke="#111111" stroke-width="3"/>' +
-      '<circle cx="17" cy="19" r="4" fill="#111111"/></svg>';
-    return el;
-  }
-
-  function poserPoint(lat, lon) {
-    point = { lat: lat, lon: lon };
-    if (!marqueur) {
-      marqueur = new maplibregl.Marker({ element: elementMarqueur(), draggable: true, anchor: 'center' })
-        .setLngLat([lon, lat]).addTo(carte);
-      marqueur.on('dragend', function () {
-        var p = marqueur.getLngLat();
-        poserPoint(p.lat, p.lng);
-      });
-    } else {
-      marqueur.setLngLat([lon, lat]);
-    }
-    $('point-choisi').textContent = 'Point choisi : ' + lat.toFixed(6) + ', ' + lon.toFixed(6);
-    $('btn-valider').disabled = false;
-  }
-
-  function retirerPoint() {
-    point = null;
-    if (marqueur) { marqueur.remove(); marqueur = null; }
-    $('point-choisi').textContent = 'Touchez la carte à l’endroit où vous êtes.';
-    $('btn-valider').disabled = true;
-  }
-
-  carte.on('click', function (e) { poserPoint(e.lngLat.lat, e.lngLat.lng); });
-
-  function basculerFond(photo) {
+  function fond(photo) {
     carte.setLayoutProperty('plan', 'visibility', photo ? 'none' : 'visible');
     carte.setLayoutProperty('photo', 'visibility', photo ? 'visible' : 'none');
     $('fond-plan').setAttribute('aria-pressed', photo ? 'false' : 'true');
     $('fond-photo').setAttribute('aria-pressed', photo ? 'true' : 'false');
   }
-  $('fond-plan').addEventListener('click', function () { basculerFond(false); });
-  $('fond-photo').addEventListener('click', function () { basculerFond(true); });
+  $('fond-plan').onclick = function () { fond(false); };
+  $('fond-photo').onclick = function () { fond(true); };
 
-  // ---- Enregistrement ----
-  $('btn-valider').addEventListener('click', function () {
-    if (!point) { return; }
-    var nom = $('nom').value.trim();
-    if (!nom) {
-      dire('Indiquez votre nom avant d’enregistrer.', 'ko');
-      $('nom').focus();
-      return;
-    }
-    try { window.localStorage.setItem('geoloc_nom', nom); } catch (e) { /* sans conséquence */ }
-
-    var btn = $('btn-valider');
-    btn.disabled = true;
-    dire('Enregistrement…');
-    enregistrer(point.lat, point.lon).then(function (c) {
-      dire('Position enregistrée.', 'ok');
-      var zone = $('dernier');
-      zone.className = 'visible';
-      zone.textContent = c.Nom + (c.Spot ? ' · ' + c.Spot : '') + ' · ' +
-        c.Latitude.toFixed(6) + ', ' + c.Longitude.toFixed(6) + ' · ' +
-        new Date().toLocaleString('fr-FR');
-      retirerPoint();
-    }).catch(function (e) {
-      btn.disabled = false;
-      dire('La position n’a pas pu être enregistrée (' + (e && e.message ? e.message : 'erreur inconnue') +
-        '). Vérifiez que le widget est lié à la table Positions et que vous pouvez y ajouter des lignes, puis réessayez.', 'ko');
-    });
+  // ---- Périmètre de l'IGP Miel des Landes ----
+  var aire = null;
+  carte.on('load', function () {
+    fetch('aire-miel-des-landes.geojson').then(function (r) { return r.json(); }).then(function (g) {
+      aire = g.features[0].geometry;
+      carte.addSource('aire', { type:'geojson', data:g });
+      carte.addLayer({ id:'aire-fond', type:'fill', source:'aire', paint:{ 'fill-color':'#ffc400', 'fill-opacity':.22 } });
+      carte.addLayer({ id:'aire-trait', type:'line', source:'aire', paint:{ 'line-color':'#111', 'line-width':2.5 } });
+      var b = new maplibregl.LngLatBounds();
+      (aire.type === 'Polygon' ? [aire.coordinates] : aire.coordinates).forEach(function (p) { p[0].forEach(function (c) { b.extend(c); }); });
+      carte.fitBounds(b, { padding:20, animate:false });
+    }).catch(function () { $('zone').textContent = 'Périmètre indisponible : la zone ne sera pas vérifiée.'; });
   });
+
+  function dansAnneau(x, y, r) {
+    var d = false;
+    for (var i = 0, j = r.length - 1; i < r.length; j = i++) {
+      if (((r[i][1] > y) !== (r[j][1] > y)) && (x < (r[j][0] - r[i][0]) * (y - r[i][1]) / (r[j][1] - r[i][1]) + r[i][0])) { d = !d; }
+    }
+    return d;
+  }
+  function dansZone(lon, lat) {
+    var polys = aire.type === 'Polygon' ? [aire.coordinates] : aire.coordinates;
+    return polys.some(function (p) {
+      return dansAnneau(lon, lat, p[0]) && !p.slice(1).some(function (t) { return dansAnneau(lon, lat, t); });
+    });
+  }
+
+  // ---- Marqueurs ----
+  function hexa(couleur, plein) {
+    var el = document.createElement('div');
+    el.innerHTML = '<svg viewBox="0 0 34 38" width="34" height="38" aria-hidden="true"><polygon points="17,2 31,10 31,28 17,36 3,28 3,10" fill="' +
+      couleur + '" stroke="#111" stroke-width="3"/>' + (plein ? '<circle cx="17" cy="19" r="4" fill="#111"/>' : '') + '</svg>';
+    return el;
+  }
+
+  var nouveau = null, horsZone = false, existants = [];
+  carte.on('click', function (e) {
+    var lat = e.lngLat.lat, lon = e.lngLat.lng;
+    if (!nouveau) {
+      nouveau = new maplibregl.Marker({ element: hexa('#ffc400', true), draggable:true, anchor:'center' }).setLngLat([lon, lat]).addTo(carte);
+      nouveau.on('dragend', function () { var p = nouveau.getLngLat(); evaluer(p.lat, p.lng); });
+    } else { nouveau.setLngLat([lon, lat]); }
+    evaluer(lat, lon);
+  });
+  function evaluer(lat, lon) {
+    $('point-choisi').textContent = 'Point choisi : ' + lat.toFixed(6) + ', ' + lon.toFixed(6);
+    if (aire) {
+      horsZone = !dansZone(lon, lat);
+      $('zone').textContent = horsZone ? 'Point hors zone' : 'Point dans la zone';
+      $('zone').className = horsZone ? 'ko' : 'ok';
+    }
+    $('btn-valider').disabled = false;
+  }
+  function viderNouveau() {
+    if (nouveau) { nouveau.remove(); nouveau = null; }
+    $('point-choisi').textContent = 'Touchez la carte pour placer un point.';
+    $('zone').textContent = ''; $('btn-valider').disabled = true;
+  }
+
+  // ---- Enregistrement : une ligne ajoutée par point ----
+  $('btn-valider').onclick = function () {
+    var nom = $('nom').value.trim();
+    if (!nom) { dire('Indiquez votre nom avant d’enregistrer.', 'ko'); $('nom').focus(); return; }
+    if (!nouveau || !griste) { return; }
+    try { localStorage.setItem('geoloc_nom', nom); } catch (e) {}
+    var p = nouveau.getLngLat(), d = new Date();
+    $('btn-valider').disabled = true; dire('Enregistrement…');
+    grist.getTable().create({ fields: {
+      Nom: nom,
+      Date: Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 1000,
+      Latitude: Math.round(p.lat * 1e6) / 1e6,
+      Longitude: Math.round(p.lng * 1e6) / 1e6,
+      Spot: $('spot').value.trim(),
+      Hors_zone: horsZone
+    } }).then(function () { dire('Point enregistré.', 'ok'); viderNouveau(); })
+      .catch(function (e) { $('btn-valider').disabled = false;
+        dire('Enregistrement impossible (' + (e && e.message || 'erreur') + ').', 'ko'); });
+  };
+
+  // ---- Points actifs de la personne (Grist ne renvoie que ses lignes) ----
+  function dessiner(recs) {
+    existants.forEach(function (m) { m.remove(); }); existants = [];
+    var ul = $('liste'); ul.innerHTML = '';
+    var actifs = recs.filter(function (r) { return !r.Retire_le && r.Latitude != null && r.Longitude != null; });
+    if (!actifs.length) { ul.outerHTML = '<ul id="liste"><li class="vide">Aucun point actif.</li></ul>'; }
+    actifs.forEach(function (r) {
+      existants.push(new maplibregl.Marker({ element: hexa(r.Hors_zone ? '#e9e2c9' : '#ffc400', false), anchor:'center' })
+        .setLngLat([r.Longitude, r.Latitude]).addTo(carte));
+      var li = document.createElement('li'), txt = document.createElement('div'), b = document.createElement('button');
+      txt.className = 'txt';
+      txt.textContent = r.Spot || 'Sans nom de spot';
+      var s = document.createElement('small');
+      s.textContent = r.Latitude.toFixed(5) + ', ' + r.Longitude.toFixed(5) + (r.Hors_zone ? ' · hors zone' : '');
+      txt.appendChild(s);
+      txt.onclick = function () { carte.flyTo({ center:[r.Longitude, r.Latitude], zoom:15 }); };
+      b.className = 'retirer'; b.type = 'button'; b.textContent = 'Retirer';
+      b.onclick = function () {
+        if (b.dataset.arme !== '1') { b.dataset.arme = '1'; b.textContent = 'Confirmer ?'; return; }
+        b.disabled = true;
+        // Le point n'est pas supprimé : il est seulement marqué comme retiré
+        grist.getTable().update({ id: r.id, fields: { Retire_le: Math.floor(Date.now() / 1000) } })
+          .catch(function (e) { b.disabled = false; dire('Retrait impossible (' + (e && e.message || 'erreur') + ').', 'ko'); });
+      };
+      li.appendChild(txt); li.appendChild(b); $('liste').appendChild(li);
+    });
+  }
+  if (griste) { grist.onRecords(dessiner); }
 })();
 </script>
 </body>
